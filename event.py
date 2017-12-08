@@ -6,11 +6,11 @@ import decimalencoder
 import logging
 import time
 import boto3
+
 dynamodb = boto3.resource('dynamodb')
 
 
 def create(event, context):
-
     event_table = dynamodb.Table(os.environ['event_table'])
     user_table = dynamodb.Table(os.environ['user_table'])
 
@@ -31,7 +31,7 @@ def create(event, context):
 
     if not type or not desc:
         print("In if")
-        logging.error("username or password empty. ")
+        logging.error("type or description empty. ")
         raise Exception("Couldn't create the todo item.")
 
     timestamp = int(time.time() * 1000)
@@ -52,8 +52,8 @@ def create(event, context):
 
     item = {
         "event_id": str(uuid.uuid1()),
-        "type": type,
-        "desc": desc,
+        "event_type": type,
+        "event_desc": desc,
         "created_at": timestamp,
         "user": json.dumps(user, cls=decimalencoder.DecimalEncoder)
     }
@@ -71,12 +71,13 @@ def create(event, context):
 
     return response
 
+
 def delete(event, context):
     event_table = dynamodb.Table(os.environ['event_table'])
 
     event_table.delete_item(
         Key={
-            'event_id':event['pathParameters']['id']
+            'event_id': event['pathParameters']['id']
         }
     )
 
@@ -124,11 +125,11 @@ def update(event, context):
             'event_id': event['pathParameters']['id']
         },
         ExpressionAttributeValues={
-            ':desc': data['text'],
-            ':type': data['checked'],
-            ':created_at': timestamp,
-            ':user': json.dumps(user, cls=decimalencoder.DecimalEncoder)
-        },
+            ':d': data['desc'],
+            ':t': data['type']
+            },
+        UpdateExpression="set event_type = :t, event_desc = :d",
+
         ReturnValues='ALL_NEW',
     )
 
@@ -140,4 +141,5 @@ def update(event, context):
     }
 
     return response
+
 
